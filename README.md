@@ -1,4 +1,5 @@
 # FuelEU Maritime Compliance Platform
+![Uploading home.JPG…]()
 
 A full-stack FuelEU Maritime compliance platform with React/TypeScript frontend and Node.js/PostgreSQL backend using hexagonal architecture.
 
