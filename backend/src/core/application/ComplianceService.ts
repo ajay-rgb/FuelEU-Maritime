@@ -1,6 +1,13 @@
 import { IComplianceService, IComplianceRepository } from '../ports/IComplianceService';
 import { IBankRepository } from '../ports/IBankRepository';
+import { IBorrowRepository } from '../ports/IBorrowRepository';
 import { ComplianceCalculationResult } from '../domain/ComplianceBalance';
+import {
+  roundTo5Decimals,
+  calculatePenalty,
+  getTargetGHGIE as getTargetFromUtils
+} from '../utils/calculations';
+import { calculateGHGIntensity, FuelConsumption } from '../domain/FuelConsumption';
 
 /**
  * FuelEU Maritime Compliance Service
@@ -9,7 +16,8 @@ import { ComplianceCalculationResult } from '../domain/ComplianceBalance';
 export class ComplianceService implements IComplianceService {
   constructor(
     private complianceRepo: IComplianceRepository,
-    private bankRepo: IBankRepository
+    private bankRepo: IBankRepository,
+    private borrowRepo: IBorrowRepository
   ) {}
 
   /**
@@ -17,20 +25,30 @@ export class ComplianceService implements IComplianceService {
    * Based on Annex IV Part A
    */
   getTargetGHGIE(year: number): number {
-    if (year >= 2025 && year <= 2029) {
-      return 89.3368; // 2% reduction from 91.16
-    } else if (year >= 2030 && year <= 2034) {
-      return 85.6904; // 6% reduction from 91.16
-    } else if (year >= 2035 && year <= 2039) {
-      return 79.2808; // 13% reduction
-    } else if (year >= 2040 && year <= 2044) {
-      return 68.3700; // 26% reduction
-    } else if (year >= 2045 && year <= 2049) {
-      return 57.4592; // 37% reduction
-    } else if (year >= 2050) {
-      return 18.2320; // 80% reduction
-    }
-    return 91.16; // Default baseline
+    return getTargetFromUtils(year);
+  }
+
+  /**
+   * Calculate penalty for non-compliance
+   * Formula: |CB| / (GHGIEactual × 41,000) × 2,400 EUR
+   * 
+   * @param shipId - Ship identifier
+   * @param year - Reporting year
+   * @param consecutiveYears - Number of consecutive non-compliant years
+   * @returns Penalty amount in EUR
+   */
+  async calculateCompliancePenalty(
+    shipId: string,
+    year: number,
+    consecutiveYears: number = 1
+  ): Promise<number> {
+    const compliance = await this.calculateComplianceBalance(shipId, year);
+    
+    return calculatePenalty(
+      compliance.cbGco2eq,
+      compliance.ghgieActual,
+      consecutiveYears
+    );
   }
 
   /**
@@ -48,12 +66,27 @@ export class ComplianceService implements IComplianceService {
     
     // For demo purposes, using simplified calculation
     // In production, this would aggregate fuel consumption across all voyages
-    // Using shipId as routeId for demo
-    const ghgieActual = 90.5; // Mock value - should come from actual fuel data
-    const energyScopeMj = 5000000; // Mock value - calculated from fuel consumption
+    // Example fuel consumption - should come from voyage data in production
+    const fuelConsumptions: FuelConsumption[] = [
+      {
+        fuelType: 'VLSFO',
+        mass: 120000000, // 120,000 kg = 120,000,000 g
+        lcv: 0.041,      // 41 MJ/kg = 0.041 MJ/g
+        wttEmissions: 3.206,   // gCO2eq/MJ from Annex I Table 1
+        ttwEmissions: 77.389,  // gCO2eq/MJ from Annex I Table 1
+        slipCoefficient: 0,    // No slip for conventional fuel
+        rewardFactor: 1,       // Standard fuel
+        isRFNBO: false
+      }
+    ];
     
-    // Round to 5 decimal places
-    const cbGco2eq = this.roundTo5Decimals(
+    // Calculate GHG intensity using full formula
+    const ghgIntensity = calculateGHGIntensity(fuelConsumptions, 0);
+    const ghgieActual = roundTo5Decimals(ghgIntensity.total);
+    const energyScopeMj = roundTo5Decimals(ghgIntensity.energy);
+    
+    // Calculate compliance balance
+    const cbGco2eq = roundTo5Decimals(
       (ghgieTarget - ghgieActual) * energyScopeMj
     );
 
@@ -92,23 +125,35 @@ export class ComplianceService implements IComplianceService {
   }
 
   /**
-   * Get adjusted CB after applying banked surplus
+   * Get adjusted CB after applying banked surplus and aggravated ACS
+   * Adjusted CB = Initial CB + Banked Surplus - Aggravated ACS (from previous year)
    */
   async getAdjustedCB(shipId: string, year: number): Promise<number> {
     const compliance = await this.calculateComplianceBalance(shipId, year);
-    const totalBanked = await this.bankRepo.getTotalBanked(shipId);
+    let adjustedCB = compliance.cbGco2eq;
     
-    // If ship has deficit, apply banked surplus
-    if (compliance.cbGco2eq < 0 && totalBanked > 0) {
-      const deficit = Math.abs(compliance.cbGco2eq);
-      const applied = Math.min(deficit, totalBanked);
-      return this.roundTo5Decimals(compliance.cbGco2eq + applied);
+    // Subtract aggravated ACS from previous year (if any)
+    const unpaidBorrow = await this.borrowRepo.getUnpaidFromPreviousYear(shipId, year);
+    if (unpaidBorrow) {
+      adjustedCB = roundTo5Decimals(adjustedCB - unpaidBorrow.aggravatedAmount);
+      // Mark as repaid
+      await this.borrowRepo.markAsRepaid(unpaidBorrow.id);
     }
     
-    return this.roundTo5Decimals(compliance.cbGco2eq);
+    // If ship has deficit after borrowing repayment, apply banked surplus
+    if (adjustedCB < 0) {
+      const totalBanked = await this.bankRepo.getTotalBanked(shipId);
+      if (totalBanked > 0) {
+        const deficit = Math.abs(adjustedCB);
+        const applied = Math.min(deficit, totalBanked);
+        adjustedCB = roundTo5Decimals(adjustedCB + applied);
+      }
+    }
+    
+    return adjustedCB;
   }
 
   private roundTo5Decimals(value: number): number {
-    return Math.round(value * 100000) / 100000;
+    return roundTo5Decimals(value);
   }
 }
