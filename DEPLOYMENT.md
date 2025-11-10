@@ -71,9 +71,11 @@ git push origin main
    - Click "Environment Variables"
    - Add:
      ```
-     VITE_API_URL = https://fueleu-backend.vercel.app
+     VITE_API_URL = https://fueleu-backend.vercel.app/api
      ```
-   (Use the backend URL from step 3.7)
+   ⚠️ **IMPORTANT:** Include `/api` at the end of the URL!
+   
+   (Use the backend URL from step 3.7 and add `/api` to it)
 
 5. Click **Deploy**
 
