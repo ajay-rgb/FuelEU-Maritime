@@ -1,11 +1,13 @@
-import { ComplianceService } from '../../../src/core/application/ComplianceService';
-import { IComplianceRepository } from '../../../src/core/ports/IComplianceService';
-import { IBankRepository } from '../../../src/core/ports/IBankRepository';
+import { ComplianceService } from '../core/application/ComplianceService';
+import { IComplianceRepository } from '../core/ports/IComplianceService';
+import { IBankRepository } from '../core/ports/IBankRepository';
+import { IBorrowRepository } from '../core/ports/IBorrowRepository';
 
 describe('ComplianceService', () => {
   let complianceService: ComplianceService;
   let mockComplianceRepo: jest.Mocked<IComplianceRepository>;
   let mockBankRepo: jest.Mocked<IBankRepository>;
+  let mockBorrowRepo: jest.Mocked<IBorrowRepository>;
 
   beforeEach(() => {
     mockComplianceRepo = {
@@ -23,7 +25,16 @@ describe('ComplianceService', () => {
       delete: jest.fn(),
     };
 
-    complianceService = new ComplianceService(mockComplianceRepo, mockBankRepo);
+    mockBorrowRepo = {
+      create: jest.fn(),
+      findByShipAndYear: jest.fn(),
+      findByShip: jest.fn(),
+      markAsRepaid: jest.fn(),
+      borrowedInPreviousYear: jest.fn(),
+      getUnpaidFromPreviousYear: jest.fn(),
+    };
+
+    complianceService = new ComplianceService(mockComplianceRepo, mockBankRepo, mockBorrowRepo);
   });
 
   describe('getTargetGHGIE', () => {
@@ -75,6 +86,7 @@ describe('ComplianceService', () => {
         ghgieTarget: 89.3368,
         energyScopeMj: 5000000,
       });
+      mockBorrowRepo.getUnpaidFromPreviousYear.mockResolvedValue(null);
       mockBankRepo.getTotalBanked.mockResolvedValue(3000);
 
       const adjustedCB = await complianceService.getAdjustedCB('SHIP001', 2025);

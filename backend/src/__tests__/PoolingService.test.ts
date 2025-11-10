@@ -1,4 +1,4 @@
-import { PoolingService } from '../../../src/core/application/PoolingService';
+import { PoolingService } from '../core/application/PoolingService';
 import { PrismaClient } from '@prisma/client';
 
 describe('PoolingService', () => {
