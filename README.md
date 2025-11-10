@@ -1,5 +1,5 @@
 # FuelEU Maritime Compliance Platform
-![Uploading home.JPG…]()
+![Uploading image.png…]()
 
 > A full-stack web application for monitoring and managing maritime greenhouse gas emissions compliance under the EU's FuelEU Maritime Regulation.
 
