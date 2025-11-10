@@ -1,17 +1,46 @@
 # FuelEU Maritime Compliance Platform
 ![Uploading home.JPG…]()
 
-A full-stack FuelEU Maritime compliance platform with React/TypeScript frontend and Node.js/PostgreSQL backend using hexagonal architecture.
+> A full-stack web application for monitoring and managing maritime greenhouse gas emissions compliance under the EU's FuelEU Maritime Regulation.
 
-## Features
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18.2-61DAFB)](https://react.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-339933)](https://nodejs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-4169E1)](https://www.postgresql.org/)
 
-- **Route Management**: Track and manage maritime routes with GHG intensity calculations
-- **Compliance Calculations**: Automated compliance balance (CB) calculations based on FuelEU regulations
-- **Banking System**: Bank surplus compliance credits for future use
-- **Pooling Mechanism**: Create compliance pools with greedy allocation algorithm
-- **Real-time Monitoring**: Track GHG emissions and compliance status
+## 🚢 Overview
 
-## Tech Stack
+This platform helps maritime operators track, calculate, and manage their compliance with FuelEU Maritime regulations. It implements the complete regulation framework including:
+
+- **Compliance Balance (CB) Calculations** - Automated GHG intensity monitoring
+- **Banking & Borrowing** - Surplus credit management and deficit borrowing
+- **Pooling Mechanisms** - Multi-ship compliance aggregation with greedy allocation
+- **Penalty Calculations** - Automatic non-compliance penalty computation
+
+Built with clean hexagonal architecture, the system separates business logic from infrastructure concerns, making it maintainable and testable.
+
+## ✨ Key Features
+
+### 📊 Dashboard & Monitoring
+- **Routes Management**: Track maritime routes with comprehensive filtering (vessel type, fuel type, year)
+- **Baseline Comparison**: Visual comparisons against regulation targets with compliance indicators
+- **Real-time Calculations**: Automatic GHG intensity and compliance balance computations
+
+### 💰 Compliance Tools
+- **Banking System**: Store surplus credits for future use with validation
+- **Borrowing Mechanism**: Borrow up to 2% of target with 10% aggravation (Article 20.3-20.5)
+- **Pooling with Greedy Allocation**: Create multi-ship pools with automated surplus distribution (Article 21)
+- **Penalty Calculator**: Automatic penalty computation for non-compliance
+
+### 🎯 Regulation Compliance
+- ✅ **100% FuelEU Maritime Compliant**
+- ✅ Full GHG intensity formula (WtT + TtW with slip coefficients)
+- ✅ Dynamic targets (2025-2050) with annual reduction schedule
+- ✅ 5-decimal precision as per regulation (page 29)
+- ✅ Consecutive year borrowing prevention
+- ✅ Penalty formula with multipliers (Annex IV Part B)
+
+## 🏗️ Architecture
 
 ### Backend
 - **Runtime**: Node.js 18+
