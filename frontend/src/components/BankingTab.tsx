@@ -93,7 +93,6 @@ export default function BankingTab() {
   }
 
   const hasSurplus = compliance && compliance.cbGco2eq > 0;
-  const hasDeficit = compliance && compliance.cbGco2eq < 0;
   const totalBanked = bankBalance?.totalBanked || 0;
 
   return (
