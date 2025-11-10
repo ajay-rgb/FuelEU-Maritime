@@ -7,6 +7,7 @@ import { RouteRepository } from '../../adapters/outbound/postgres/RouteRepositor
 import { ComplianceRepository } from '../../adapters/outbound/postgres/ComplianceRepository';
 import { BankRepository } from '../../adapters/outbound/postgres/BankRepository';
 import { PoolRepository } from '../../adapters/outbound/postgres/PoolRepository';
+import { BorrowRepository } from '../../adapters/outbound/postgres/BorrowRepository';
 
 // Services
 import { ComplianceService } from '../../core/application/ComplianceService';
@@ -24,6 +25,7 @@ import { createRouteRouter } from '../../adapters/inbound/http/routes';
 import { createComplianceRouter } from '../../adapters/inbound/http/complianceRoutes';
 import { createBankingRouter } from '../../adapters/inbound/http/bankingRoutes';
 import { createPoolingRouter } from '../../adapters/inbound/http/poolingRoutes';
+import borrowingRoutes from '../../adapters/inbound/http/borrowingRoutes';
 
 export class App {
   public app: Application;
@@ -48,9 +50,10 @@ export class App {
     const complianceRepo = new ComplianceRepository(this.prisma);
     const bankRepo = new BankRepository(this.prisma);
     const poolRepo = new PoolRepository(this.prisma);
+    const borrowRepo = new BorrowRepository(this.prisma);
 
     // Initialize services
-    const complianceService = new ComplianceService(complianceRepo, bankRepo);
+    const complianceService = new ComplianceService(complianceRepo, bankRepo, borrowRepo);
     const bankingService = new BankingService(bankRepo, complianceService);
     const poolingService = new PoolingService(poolRepo, this.prisma);
 
@@ -65,6 +68,7 @@ export class App {
     this.app.use('/api/compliance', createComplianceRouter(complianceController));
     this.app.use('/api/banking', createBankingRouter(bankingController));
     this.app.use('/api/pools', createPoolingRouter(poolingController));
+    this.app.use('/api/borrowing', borrowingRoutes);
 
     // Health check
     this.app.get('/api/health', (req, res) => {

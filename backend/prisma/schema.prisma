@@ -55,6 +55,20 @@ model BankEntry {
   @@map("bank_entries")
 }
 
+model BorrowEntry {
+  id                String   @id @default(uuid())
+  shipId            String
+  year              Int
+  amountGco2eq      Float    // Amount borrowed (ACS)
+  aggravatedAmount  Float    // Amount to repay (ACS × 1.1)
+  repaid            Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  @@unique([shipId, year])
+  @@index([shipId, year])
+  @@map("borrow_entries")
+}
+
 model Pool {
   id              String   @id @default(uuid())
   year            Int
