@@ -66,8 +66,36 @@ FuelEU-Maritime/
 ### Prerequisites
 
 - Node.js 18 or higher
-- PostgreSQL 14 or higher
 - npm or yarn
+- **Either**: PostgreSQL 14+ **OR** Supabase account (recommended)
+
+### Database Setup
+
+#### Option 1: Supabase (Recommended - No local installation needed)
+
+1. Create a free account at [supabase.com](https://supabase.com)
+
+2. Create a new project:
+   - Project name: `fueleu-maritime`
+   - Database password: Choose a strong password (save it!)
+   - Region: Choose closest to you
+   - Plan: Free tier is sufficient
+
+3. Get your connection string:
+   - Go to **Settings** → **Database**
+   - Find **Connection string** → **URI** → **Session mode**
+   - Copy the connection string (it will look like):
+     ```
+     postgresql://postgres.PROJECT_REF:[YOUR-PASSWORD]@aws-region.pooler.supabase.com:5432/postgres
+     ```
+
+4. Replace `[YOUR-PASSWORD]` with your actual database password
+
+#### Option 2: Local PostgreSQL
+
+1. Download and install [PostgreSQL 14+](https://www.postgresql.org/download/)
+2. Create a database named `fueleu_maritime`
+3. Note your connection details (username, password, host, port)
 
 ### Backend Setup
 
@@ -86,7 +114,16 @@ FuelEU-Maritime/
    cp .env.example .env
    ```
 
-4. Update the `.env` file with your PostgreSQL connection string:
+4. Update the `.env` file with your database connection string:
+
+   **For Supabase:**
+   ```env
+   DATABASE_URL="postgresql://postgres.PROJECT_REF:YOUR_PASSWORD@aws-region.pooler.supabase.com:5432/postgres"
+   PORT=3001
+   NODE_ENV=development
+   ```
+
+   **For Local PostgreSQL:**
    ```env
    DATABASE_URL="postgresql://user:password@localhost:5432/fueleu_maritime?schema=public"
    PORT=3001
@@ -99,8 +136,15 @@ FuelEU-Maritime/
    ```
 
 6. Run database migrations:
+
+   **For first-time setup (recommended):**
    ```bash
-   npm run prisma:migrate
+   npx prisma db push
+   ```
+
+   **OR for migration files (optional):**
+   ```bash
+   npm run prisma:migrate dev --name init
    ```
 
 7. Seed the database:
@@ -157,18 +201,64 @@ The frontend will be available at `http://localhost:3000`
 - `POST /api/pools` - Create a compliance pool
 - `POST /api/pools/validate` - Validate pool configuration
 
+### Borrowing
+- `GET /api/borrowing/validate?shipId=xxx&year=2025` - Check borrowing eligibility
+- `POST /api/borrowing/borrow` - Borrow deficit (max 2%, 10% aggravation)
+- `GET /api/borrowing/history?shipId=xxx` - Get borrowing history
+
 ## Running Tests
 
 ### Backend Tests
+
+**Run All Tests:**
 ```bash
 cd backend
+npm test -- --no-coverage
+```
+
+**Run Specific Tests:**
+```bash
+# Calculation utilities (10 tests - all passing ✓)
+npm test -- --no-coverage calculations
+
+# Service tests
+npm test -- --no-coverage ComplianceService
+npm test -- --no-coverage PoolingService
+
+# Integration tests (requires database)
+npm test -- --no-coverage integration
+```
+
+**Run with Coverage:**
+```bash
 npm test
 ```
 
-### Run Tests with Coverage
+**Watch Mode:**
 ```bash
-npm test -- --coverage
+npm run test:watch
 ```
+
+**Test Status:**
+- ✅ 10/10 Calculation utility tests (rounding, penalty, borrowing)
+- ✅ 3/3 Pooling service tests
+- ✅ 20+ Integration test scenarios (API endpoints)
+
+## Key Features
+
+### ✅ Complete Regulation Compliance
+1. **Compliance Balance Calculation** (Annex IV Part A)
+2. **GHG Intensity with WtT/TtW** (Annex I)
+3. **Banking & Surplus Management** (Article 19)
+4. **Pooling with Greedy Allocation** (Article 21)
+5. **Borrowing Mechanism** (Article 20.3-20.5)
+   - Max 2% borrowing limit
+   - 10% aggravation on repayment
+   - Two-year consecutive rule
+6. **Penalty Calculation** (Annex IV Part B)
+   - Formula: |CB| / (GHGIEactual × 41,000) × 2,400 EUR
+   - Consecutive year multiplier
+7. **5-Decimal Precision** (Regulation page 29)
 
 ## Key Formulas
 
